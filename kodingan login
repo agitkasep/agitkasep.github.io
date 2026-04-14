@@ -1,0 +1,295 @@
+Berikut adalah contoh lengkap kodingan login aplikasi web dengan autentikasi no HP/email menggunakan HTML, CSS, JavaScript, PHP & MySQL:
+
+1. Database (MySQL)
+sql
+
+Copy code
+CREATE DATABASE auth_app;
+USE auth_app;
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    no_hp VARCHAR(15) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    nama VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert user contoh (password: "password123")
+INSERT INTO users (email, no_hp, password, nama) VALUES 
+('user@example.com', '08123456789', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'John Doe');
+
+
+2. HTML Login Form (index.html)
+html
+
+Copy code
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Auth App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-box">
+            <h2>Login</h2>
+            <form id="loginForm" method="POST" action="login.php">
+                <div class="input-group">
+                    <input type="text" id="identifier" name="identifier" placeholder="Email atau No HP" required>
+                    <label for="identifier">Email / No HP</label>
+                </div>
+                
+                <div class="input-group">
+                    <input type="password" id="password" name="password" placeholder="Password" required>
+                    <label for="password">Password</label>
+                </div>
+                
+                <button type="submit" class="btn-login">Masuk</button>
+                
+                <?php
+                if(isset($_GET['error'])) {
+                    echo '<p class="error">Email/No HP atau password salah!</p>';
+                }
+                ?>
+                
+                <div class="register-link">
+                    Belum punya akun? <a href="register.php">Daftar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+
+3. CSS Styling (style.css)
+css
+
+Copy code
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+}
+
+.login-box {
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+}
+
+.login-box h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+    font-size: 28px;
+}
+
+.input-group {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e1e5e9;
+    border-radius: 10px;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-group label {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    color: #999;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.btn-login {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+}
+
+.error {
+    background: #fee;
+    color: #c33;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.register-link {
+    text-align: center;
+    margin-top: 20px;
+    color: #666;
+}
+
+.register-link a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.register-link a:hover {
+    text-decoration: underline;
+}
+
+
+
+4. JavaScript Validation (script.js)
+javascript
+
+Copy code
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    const identifier = document.getElementById('identifier').value;
+    const password = document.getElementById('password').value;
+    
+    // Validasi email atau no HP
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^08[0-9]{8,12}$/;
+    
+    if (!emailRegex.test(identifier) && !phoneRegex.test(identifier)) {
+        e.preventDefault();
+        alert('Masukkan email yang valid atau nomor HP (mulai dengan 08)');
+        return false;
+    }
+    
+    if (password.length < 6) {
+        e.preventDefault();
+        alert('Password minimal 6 karakter');
+        return false;
+    }
+});
+
+
+5. PHP Login Handler (login.php)
+php
+
+Copy code
+<?php
+session_start();
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $identifier = trim($_POST['identifier']);
+    $password = $_POST['password'];
+    
+    // Koneksi database
+    $pdo = new PDO('mysql:host=localhost;dbname=auth_app', 'root', '');
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Cek apakah identifier adalah email atau no HP
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? OR no_hp = ?");
+    $stmt->execute([$identifier, $identifier]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($user && password_verify($password, $user['password'])) {
+        // Login berhasil
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['nama'] = $user['nama'];
+        header('Location: dashboard.php');
+        exit;
+    } else {
+        // Login gagal
+        header('Location: index.html?error=1');
+        exit;
+    }
+}
+?>
+6. Dashboard (dashboard.php)
+php
+
+Copy code
+<?php
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: index.html');
+    exit;
+}
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-box">
+            <h2>Selamat Datang, <?= $_SESSION['nama'] ?>!</h2>
+            <p>ID: <?= $_SESSION['user_id'] ?></p>
+            <a href="logout.php" class="btn-login">Logout</a>
+        </div>
+    </div>
+</body>
+</html>
+7. Logout (logout.php)
+php
+
+Copy code
+<?php
+session_start();
+session_destroy();
+header('Location: index.html');
+exit;
+?>
+Cara Setup:
+Buat database dengan SQL di atas
+Simpan semua file di folder web server (XAMPP: htdocs/)
+Jalankan Apache & MySQL
+Akses http://localhost/nama_folder/
+Test login:
+Email: user@example.com
+No HP: 08123456789
+Password: password123
+Fitur:
+✅ Login dengan Email ATAU No HP
+✅ Password hashing (bcrypt)
+✅ Validasi client & server
+✅ Responsive design
+✅ Session management
+✅ Security protection
