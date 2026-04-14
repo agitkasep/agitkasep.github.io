@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berkah - Aplikasi Islami</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
+    <style>
+        /* CSS ASLI KAMU */
+        @font-face { font-family: 'Amiri'; src: url('./fonts/amiri-v30-arabic-regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+        @font-face { font-family: 'Amiri'; src: url('./fonts/amiri-v30-arabic-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+        @font-face { font-family: 'Amiri Quran'; src: url('./fonts/amiri-quran-v19-arabic-regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: linear-gradient(135deg, #f4f7f6 0%, #e8f5e8 100%); color: #1e293b; padding-bottom: 40px; min-height: 100vh; }
+        
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 20px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,168,107,0.1); position: sticky; top: 0; z-index: 100;
+        }
+        .user-profile { display: flex; align-items: center; gap: 12px; }
+        .logo-box { 
+            width: 45px; height: 45px; background: linear-gradient(135deg, #00a86b, #00d084); 
+            border-radius: 12px; display: flex; align-items: center; justify-content: center; 
+            color: white; font-weight: 700; font-size: 18px; box-shadow: 0 4px 15px rgba(0,168,107,0.3);
+            text-transform: uppercase;
+        }
+        .user-info h2 { font-size: 18px; font-weight: 700; color: #00a86b; }
+        .user-info p { font-size: 10px; color: #64748b; font-weight: 600; }
+
+        /* GAYA TAMBAHAN UNTUK LOGIN OVERLAY */
+        #login-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffffff; z-index: 2000; flex-direction: column; align-items: center;
+            justify-content: center; padding: 30px; text-align: center;
+        }
+        .login-card { width: 100%; max-width: 350px; }
+        .login-input {
+            width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #e2e8f0;
+            border-radius: 15px; outline: none; font-size: 14px; transition: 0.3s;
+        }
+        .login-input:focus { border-color: #00a86b; }
+        .btn-login {
+            width: 100%; background: #00a86b; color: white; border: none;
+            padding: 15px; border-radius: 15px; font-weight: 700; margin-top: 10px; cursor: pointer;
+        }
+
+        /* SISANYA CSS ASLI KAMU */
+        .doa-container { margin: 20px; padding: 25px; background: white; border-radius: 24px; text-align: center; border-left: 6px solid #00a86b; box-shadow: 0 8px 32px rgba(0,0,0,0.05); min-height: 200px; }
+        .doa-judul { font-size: 13px; font-weight: 700; color: #00a86b; margin-bottom: 15px; text-transform: uppercase; }
+        .doa-arab { font-size: 26px; font-weight: 700; margin-bottom: 12px; line-height: 1.8; direction: rtl; font-family: 'Amiri', serif; }
+        #latin-doa { font-size: 13px; color: #00a86b; margin-bottom: 10px; font-weight: 600; line-height: 1.5; }
+        .doa-arti { font-size: 12px; color: #64748b; font-style: italic; line-height: 1.6; }
+        .btn-wa { background: #25D366; color: white; border: none; padding: 10px 20px; border-radius: 50px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 20px auto 0; }
+        .sholat-mini { margin: 0 20px 25px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .sholat-box { background: white; padding: 12px 5px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; }
+        .sholat-box b { font-size: 12px; display: block; color: #00a86b; }
+        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 0 20px; }
+        .menu-item { background: white; padding: 18px 10px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .menu-icon { font-size: 28px; margin-bottom: 8px; }
+        .menu-item span { font-size: 10px; font-weight: 700; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-card">
+            <div class="logo-box" style="width:70px; height:70px; font-size:28px; margin: 0 auto 20px;">B</div>
+            <h2 style="color:#00a86b; margin-bottom:10px;">Selamat Datang</h2>
+            <p style="font-size:12px; color:#64748b; margin-bottom:20px;">Silakan verifikasi diri untuk akses penuh</p>
+            
+            <input type="text" id="reg-nama" class="login-input" placeholder="Nama Lengkap">
+            <input type="tel" id="reg-phone" class="login-input" placeholder="Nomor WA (Contoh: 0812...)">
+            <button onclick="prosesVerifikasi()" class="btn-login">KIRIM KODE OTP</button>
+            
+            <div id="recaptcha-container" style="margin-top:15px;"></div>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="user-profile">
+            <div class="logo-box" id="user-photo">B</div>
+            <div class="user-info">
+                <h2 id="user-display-name">BERKAH</h2>
+                <p id="tgl-jam">Memuat waktu...</p>
+                <small id="lokasi-text" style="font-size: 9px; color: #00a86b;">Mencari lokasi...</small>
+            </div>
+        </div>
+        <div onclick="prosesLogout()" style="font-size: 20px; cursor:pointer;">🚪</div>
+    </div>
+
+    <div class="doa-container">
+        <div class="doa-judul" id="judul-doa">Doa Hari Ini</div>
+        <div class="doa-arab" id="arab-doa">جاري التحميل...</div>
+        <div id="latin-doa"></div>
+        <div class="doa-arti" id="arti-doa">Sedang menyiapkan keberkahan hari ini.</div>
+        <button class="btn-wa" onclick="bagikanKeWA()">📲 BAGIKAN KE WHATSAPP</button>
+    </div>
+
+    <div class="sholat-mini">
+        <div class="sholat-box"><span>Subuh</span><b id="j-Fajr">--:--</b></div>
+        <div class="sholat-box"><span>Dzuhur</span><b id="j-Dhuhr">--:--</b></div>
+        <div class="sholat-box"><span>Ashar</span><b id="j-Asr">--:--</b></div>
+        <div class="sholat-box"><span>Maghrib</span><b id="j-Maghrib">--:--</b></div>
+        <div class="sholat-box"><span>Isya</span><b id="j-Isha">--:--</b></div>
+    </div>
+
+    <div class="menu-grid">
+        <a href="jadwal sholat.html" class="menu-item"><div class="menu-icon">🕌</div><span>Jadwal</span></a>
+        <a href="https://quran.com/id" target="_blank" class="menu-item"><div class="menu-icon">📖</div><span>Al-Qur'an</span></a>
+        <a href="https://hadits.id/" target="_blank" class="menu-item"><div class="menu-icon">📚</div><span>Hadist</span></a>
+        <a href="https://www.jobstreet.co.id/" target="_blank" class="menu-item"><div class="menu-icon">💼</div><span>Loker</span></a>
+        <a href="https://www.republika.co.id/kanal/islam" target="_blank" class="menu-item"><div class="menu-icon">📰</div><span>Berita</span></a>
+        <a href="https://kalam.sindonews.com/doa" target="_blank" class="menu-item"><div class="menu-icon">🛠️</div><span>Alat</span></a>
+    </div>
+
+    <script>
+        // 1. CONFIG FIREBASE (KODE YANG KITA SIMPAN TADI)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAgjm5gldCRyB9fX7e8KcX6r2SsGmMR6AI",
+            authDomain: "aplikasi-berkah.firebaseapp.com",
+            projectId: "aplikasi-berkah",
+            storageBucket: "aplikasi-berkah.firebasestorage.app",
+            messagingSenderId: "88998193049",
+            appId: "1:88998193049:web:1e143d1d3686a18a81d508",
+            measurementId: "G-N5K18DBNZR"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // 2. SETUP RECAPTCHA
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+            'size': 'invisible'
+        });
+
+        // 3. FUNGSI LOGIN
+        function prosesVerifikasi() {
+            const nama = document.getElementById('reg-nama').value;
+            const phone = document.getElementById('reg-phone').value;
+
+            if (nama.length < 2) return alert("Masukkan nama yang benar");
+            
+            let formattedPhone = phone;
+            if (phone.startsWith('0')) {
+                formattedPhone = '+62' + phone.substring(1);
+            }
+
+            const appVerifier = window.recaptchaVerifier;
+
+            auth.signInWithPhoneNumber(formattedPhone, appVerifier)
+                .then((confirmationResult) => {
+                    const code = prompt("Masukkan 6 digit kode OTP yang dikirim via SMS:");
+                    return confirmationResult.confirm(code);
+                })
+                .then((result) => {
+                    // Simpan data ke LocalStorage agar tidak login terus
+                    const userData = { nama: nama, phone: result.user.phoneNumber };
+                    localStorage.setItem('user_berkah_data', JSON.stringify(userData));
+                    alert("Alhamdulillah, Berhasil Masuk!");
+                    location.reload();
+                })
+                .catch((error) => {
+                    alert("Gagal: " + error.message);
+                });
+        }
+
+        // 4. CEK STATUS USER
+        function cekStatusUser() {
+            const dataStored = localStorage.getItem('user_berkah_data');
+            const overlay = document.getElementById('login-overlay');
+            
+            if (!dataStored) {
+                overlay.style.display = 'flex';
+            } else {
+                overlay.style.display = 'none';
+                const user = JSON.parse(dataStored);
+                document.getElementById('user-display-name').innerText = user.nama;
+                document.getElementById('user-photo').innerText = user.nama.charAt(0).toUpperCase();
+            }
+        }
+
+        function prosesLogout() {
+            if (confirm("Ingin keluar aplikasi?")) {
+                localStorage.removeItem('user_berkah_data');
+                auth.signOut().then(() => location.reload());
+            }
+        }
+
+        // 5. FUNGSI BERBAGI & UPDATE (FUNGSI ASLI KAMU)
+        function bagikanKeWA() {
+            const judul = document.getElementById('judul-doa').innerText;
+            const arab = document.getElementById('arab-doa').innerText;
+            const latin = document.getElementById('latin-doa').innerText;
+            const arti = document.getElementById('arti-doa').innerText;
+            const teks = `*${judul}*\n\n${arab}\n\n_${latin}_\n\n" ${arti} "\n\nShared via *Aplikasi Berkah*`;
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(teks)}`, '_blank');
+        }
+
+        async function updateDoa() {
+            try {
+                const now = new Date();
+                const response = await fetch(`doa harian/doa${now.getMonth() + 1}.json`);
+                const daftarDoa = await response.json();
+                const doa = daftarDoa[now.getDate() - 1];
+                if (doa) {
+                    document.getElementById('judul-doa').innerText = doa.judul;
+                    document.getElementById('arab-doa').innerText = doa.arab;
+                    document.getElementById('latin-doa').innerText = doa.latin;
+                    document.getElementById('arti-doa').innerText = doa.arti;
+                }
+            } catch (e) { console.log("Menunggu file..."); }
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const options = { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' };
+            document.getElementById('tgl-jam').innerText = now.toLocaleDateString('id-ID', options);
+        }
+
+        async function getSholat() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    fetchSholat(`https://api.aladhan.com/v1/timings?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&method=20`);
+                    document.getElementById('lokasi-text').innerText = `📍 Lokasi: Aktif`;
+                }, () => fetchSholat(`https://api.aladhan.com/v1/timingsByCity?city=Jakarta&country=Indonesia&method=20`));
+            }
+        }
+
+        async function fetchSholat(url) {
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const t = data.data.timings;
+                ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].forEach(k => {
+                    document.getElementById(`j-${k}`).innerText = t[k];
+                });
+            } catch (e) { console.error("Gagal muat"); }
+        }
+
+        // INIT SEMUA
+        window.onload = () => {
+            cekStatusUser();
+            updateTime();
+            updateDoa();
+            getSholat();
+            setInterval(updateTime, 60000);
+        };
+    </script>
+</body>
+</html>
